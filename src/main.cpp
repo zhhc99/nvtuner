@@ -21,7 +21,9 @@
 
 using namespace ftxui;
 
-const char* APP_VERSION = "0.1.0";
+#ifndef APP_VERSION  // defined in CMake
+#define APP_VERSION "unknown"
+#endif
 
 std::vector<std::string> log_messages;
 std::mutex log_mutex;
@@ -423,7 +425,11 @@ int main(int argc, char* argv[]) {
     }
     columns.push_back(vbox(clock_event_column) | size(WIDTH, GREATER_THAN, 18));
 
-    return vbox({hbox(columns) | border});
+    return vbox({
+        vbox(hbox(columns) | border) | flex,
+        separator(),
+        window(text("Log Console"), log_console->Render()),
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -446,7 +452,11 @@ int main(int argc, char* argv[]) {
       elements.push_back(separator());
     }
 
-    return vbox(elements) | yframe;
+    return vbox({
+        vbox(elements) | yframe | flex,
+        separator(),
+        window(text("Log Console"), log_console->Render()),
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -454,7 +464,7 @@ int main(int argc, char* argv[]) {
   // ---------------------------------------------------------------------------
   auto about_tab = Renderer([] {
     return vbox({
-        text(fmt::format("NVTuner Ver. {}", APP_VERSION)) | bold | hcenter,
+        text(fmt::format("NVTuner {}", APP_VERSION)) | bold | hcenter,
         text("https://github.com/zhhc99/nvtuner") | dim | hcenter,
         separator(),
         window(
@@ -491,9 +501,13 @@ int main(int argc, char* argv[]) {
 
   auto main_renderer = Renderer(main_container, [&] {
     auto term_size = Terminal::Size();
+    std::string version_text = fmt::format(
+        "NVTuner {} | Driver {} | CUDA {}.{} | NVML {}", APP_VERSION,
+        nvml->get_driver_version(), nvml->get_cuda_version() / 1000,
+        (nvml->get_cuda_version() % 1000) / 10, nvml->get_nvml_version());
 
     return vbox({
-               text("NVTuner") | bold | hcenter,
+               text(version_text) | bold | hcenter,
                separator(),
                hbox({
                    tab_toggle->Render(),
@@ -501,8 +515,6 @@ int main(int argc, char* argv[]) {
                }),
                separator(),
                tab_container->Render() | flex,
-               separator(),
-               window(text("Log Console"), log_console->Render()),
            }) |
            border;
   });

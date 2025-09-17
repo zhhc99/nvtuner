@@ -61,6 +61,7 @@ class NvmlManager {
 
   const std::string &get_driver_version() const { return driver_version_; }
   const std::string &get_nvml_version() const { return nvml_version_; }
+  const int &get_cuda_version() const { return cuda_version_; }
   std::vector<GpuState> &get_gpus() { return gpus_; }
 
  private:
@@ -69,6 +70,7 @@ class NvmlManager {
 
   std::string driver_version_;
   std::string nvml_version_;
+  int cuda_version_; // major is value/1000, minor is (value%1000)/10
   std::vector<GpuState> gpus_;
 };
 

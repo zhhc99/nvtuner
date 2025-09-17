@@ -31,6 +31,8 @@ NvmlManager::NvmlManager() {
         "Failed to get driver version");
   check(nvmlSystemGetNVMLVersion(nvml_buf, sizeof(nvml_buf)),
         "Failed to get NVML version");
+  check(nvmlSystemGetCudaDriverVersion(&cuda_version_),
+        "Failed to get CUDA version");
   driver_version_ = driver_buf;
   nvml_version_ = nvml_buf;
 
