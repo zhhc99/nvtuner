@@ -62,7 +62,7 @@ class NvmlManager {
   const std::string &get_driver_version() const { return driver_version_; }
   const std::string &get_nvml_version() const { return nvml_version_; }
   const int &get_cuda_version() const { return cuda_version_; }
-  std::vector<GpuState> &get_gpus() { return gpus_; }
+  const std::vector<GpuState> &get_gpus() const { return gpus_; }
 
  private:
   void check(nvmlReturn_t result, const std::string &error_msg);
@@ -70,7 +70,7 @@ class NvmlManager {
 
   std::string driver_version_;
   std::string nvml_version_;
-  int cuda_version_; // major is value/1000, minor is (value%1000)/10
+  int cuda_version_;  // major is value/1000, minor is (value%1000)/10
   std::vector<GpuState> gpus_;
 };
 
@@ -85,6 +85,10 @@ class ProfileManager {
   const std::map<std::string, OcProfile> &get_all_profiles() const {
     return profiles_;
   };
+  std::map<std::string, OcProfile> &get_all_profiles() { return profiles_; };
+  const OcProfile &get_profile(const std::string &uuid) const {
+    return profiles_.at(uuid);
+  }
   OcProfile &get_profile(const std::string &uuid) {
     return profiles_.at(uuid);
   };

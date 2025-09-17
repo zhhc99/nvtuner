@@ -100,6 +100,8 @@ cpack # for packaging
 
 发现 Bug? [欢迎提交 issue!](https://github.com/zhhc99/nvtuner/issues)
 
+想帮助开发? [看看开发手册吧!](./docs/dev-notes.md)
+
 ## 相关工具
 
 - **MSI Afterburner**: 适用于 Windows 的 GPU 超频工具, 支持各种深度配置.

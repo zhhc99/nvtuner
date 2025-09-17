@@ -154,17 +154,15 @@ int main(int argc, char* argv[]) {
   // OC Panels
   // ---------------------------------------------------------------------------
   std::vector<Component> oc_panels;
-  std::vector<bool> oc_profile_modified;
-  for (size_t i = 0; i < nvml->get_gpus().size(); ++i) {
-    oc_profile_modified.push_back(false);
 
+  const int power_step = 1;
+  const int clock_step = 15;
+  const int max_clock_min_mhz = 210;
+  const int oc_slider_tag_width = 30;
+
+  for (size_t i = 0; i < nvml->get_gpus().size(); ++i) {
     auto& gs = nvml->get_gpus()[i];
     auto& profile = pm.get_profile(gs.uuid);
-
-    int power_step = 1;
-    int clock_step = 15;
-    int max_clock_min_mhz = 210;
-    const int total_width = 30;
 
     auto power_limit_slider =
         Slider("", &profile.power_limit, &gs.power_limit_min_w,
@@ -182,16 +180,18 @@ int main(int argc, char* argv[]) {
         gpu_max_clock_slider,
     });
 
-    auto oc_panel = Renderer(oc_panel_component, [&] {
+    auto oc_panel = Renderer(oc_panel_component, [&, power_limit_slider,
+                                                  gpu_clock_offset_slider,
+                                                  gpu_max_clock_slider]() {
       std::string pl_label = "Power Limit";
       std::string pl_value = fmt::format("{}W", profile.power_limit);
-      int pl_width = total_width - pl_label.length();
+      int pl_width = oc_slider_tag_width - pl_label.length();
       std::string gco_label = "GPU Clock Offset";
       std::string gco_value = fmt::format("{:+}MHz", profile.gpu_clock_offset);
-      int gco_width = total_width - gco_label.length();
+      int gco_width = oc_slider_tag_width - gco_label.length();
       std::string gmc_label = "GPU Max Clock";
       std::string gmc_value = fmt::format("{}MHz", profile.max_gpu_clock);
-      int gmc_width = total_width - gmc_label.length();
+      int gmc_width = oc_slider_tag_width - gmc_label.length();
       return vbox({
           hbox({
               text(fmt::format("GPU {}: {} ", gs.index, gs.name)) | bold,
@@ -203,19 +203,19 @@ int main(int argc, char* argv[]) {
           }),
           hbox({
               text(fmt::format("{0}{1:>{2}}", pl_label, pl_value, pl_width)) |
-                  size(WIDTH, EQUAL, total_width + 1),
+                  size(WIDTH, EQUAL, oc_slider_tag_width + 1),
               power_limit_slider->Render() | flex,
           }),
           hbox({
               text(
                   fmt::format("{0}{1:>{2}}", gco_label, gco_value, gco_width)) |
-                  size(WIDTH, EQUAL, total_width + 1),
+                  size(WIDTH, EQUAL, oc_slider_tag_width + 1),
               gpu_clock_offset_slider->Render() | flex,
           }),
           hbox({
               text(
                   fmt::format("{0}{1:>{2}}", gmc_label, gmc_value, gmc_width)) |
-                  size(WIDTH, EQUAL, total_width + 1),
+                  size(WIDTH, EQUAL, oc_slider_tag_width + 1),
               gpu_max_clock_slider->Render() | flex,
           }),
       });

@@ -100,6 +100,8 @@ When using NVTuner, please note the following:
 
 Found a bug? [Feel free to open an issue!](https://github.com/zhhc99/nvtuner/issues)
 
+Wana help dev? [Check the dev notes!](./docs/dev-notes.md) (Chinese version only)
+
 ## Related Tools
 
 - **MSI Afterburner**: A comprehensive GPU overclocking utility for Windows, supporting in-depth configurations.
