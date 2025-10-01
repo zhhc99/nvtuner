@@ -35,12 +35,8 @@ FetchContent_MakeAvailable(nlohmann_json)
 find_package(NVML REQUIRED)
 
 # --- Executable ---
-add_executable(${PROJECT_NAME}
-    src/main.cpp
-    src/nvtuner.cpp
-    src/sys_utils.cpp
-    src/nvml_compat.cpp
-)
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_definitions(nvtuner PRIVATE
     APP_VERSION="${PROJECT_VERSION}"
