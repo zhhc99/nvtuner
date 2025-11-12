@@ -11,7 +11,6 @@
 #include <ftxui/component/loop.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <iostream>
-#include <mutex>
 
 #include "components/dashboard.h"
 #include "components/graphs_tab.h"
@@ -29,14 +28,14 @@ using namespace ftxui;
 #endif
 
 int main(int argc, char* argv[]) {
-#ifndef _WIN32
-  if (geteuid() != 0) {
-    std::cerr << "Error: nvtuner must be run with root privileges "
-                 "(e.g., using sudo)."
-              << std::endl;
-    return 1;
-  }
-#endif
+  // #ifndef _WIN32
+  //   if (geteuid() != 0) {
+  //     std::cerr << "Error: nvtuner must be run with root privileges "
+  //                  "(e.g., using sudo)."
+  //               << std::endl;
+  //     return 1;
+  //   }
+  // #endif
 
   std::unique_ptr<NvmlManager> nvml;
   try {
@@ -46,18 +45,14 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-#ifdef _WIN32
-  std::string profile_path =
-      (std::filesystem::path(SysUtils::get_executable_dir()) / "nvtuner.json")
-          .string();
-  std::string log_path =
-      (std::filesystem::path(SysUtils::get_executable_dir()) / "nvtuner.log")
-          .string();
-#else
-  std::filesystem::create_directories("/etc/nvtuner");
-  std::string profile_path = "/etc/nvtuner/nvtuner.json";
-  std::string log_path = "/etc/nvtuner/nvtuner.log";
-#endif
+  std::filesystem::path config_dir = SysUtils::get_user_config_path();
+  if (config_dir.empty()) {
+    std::cerr << "Fatal: Cannot determine user config directory." << std::endl;
+    return 1;
+  }
+  std::filesystem::create_directories(config_dir);
+  std::filesystem::path profile_path = (config_dir / "profiles.json").string();
+  std::filesystem::path log_path = (config_dir / "nvtuner.log").string();
 
   if (argc == 2 && std::string(argv[1]) == "--apply-profiles") {
     ProfileManager pm(profile_path, nvml->get_gpus());

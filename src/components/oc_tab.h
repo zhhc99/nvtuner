@@ -12,10 +12,29 @@ class OCTab {
   std::vector<ftxui::Component> oc_panels_;
   ftxui::Component main_component_;
 
-  static const int POWER_STEP = 1;
-  static const int CLOCK_STEP = 15;
-  static const int MAX_CLOCK_MIN_MHZ = 210;
-  static const int OC_SLIDER_TAG_WIDTH = 30;
+  static inline const int POWER_STEP = 1;
+  static inline const int CLOCK_STEP = 15;
+  static inline const int MAX_CLOCK_MIN_MHZ = 210;
+  static inline const int OC_SLIDER_TAG_WIDTH = 30;
+#ifdef _WIN32
+  static inline const std::string REGISTER_SUCCESSFUL =
+      "Startup scheduled task has been added.";
+  static inline const std::string REGISTER_FAILED =
+      "Failed to register startup scheduled task. Run as admin?";
+  static inline const std::string UNREGISTER_SUCCESSFUL =
+      "Startup scheduled task has been removed.";
+  static inline const std::string UNREGISTER_FAILED =
+      "Failed to remove startup scheduled task. Run as admin?";
+#else
+  static inline const std::string REGISTER_SUCCESSFUL =
+      "Startup systemd service has been added.";
+  static inline const std::string REGISTER_FAILED =
+      "Failed to register startup systemd service. Run as root?";
+  static inline const std::string UNREGISTER_SUCCESSFUL =
+      "Startup systemd service has been removed.";
+  static inline const std::string UNREGISTER_FAILED =
+      "Failed to remove startup systemd service. Run as root?";
+#endif
 
  public:
   explicit OCTab(ProfileManager& profile_manager, NvmlManager& nvml_manager);

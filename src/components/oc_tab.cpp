@@ -19,7 +19,7 @@ OCTab::OCTab(ProfileManager& profile_manager, NvmlManager& nvml_manager)
 
     elements.push_back(
         window(text("Actions"),
-               hbox({vbox(paragraph("Note: Register NVTuner service "
+               hbox({vbox(paragraph("Note: Register nvtuner service "
                                     "to automatically apply all saved "
                                     "profiles on startup.") |
                           size(HEIGHT, LESS_THAN, 3)),
@@ -45,21 +45,17 @@ void OCTab::setup_action_buttons() {
       Button("Register Service",
              [this] {
                if (SysUtils::register_startup_task()) {
-                 std::clog << "Startup service registered successfully."
-                           << std::endl;
+                 std::clog << REGISTER_SUCCESSFUL << std::endl;
                } else {
-                 std::cerr << "Failed to register startup service. Run as root?"
-                           << std::endl;
+                 std::cerr << REGISTER_FAILED << std::endl;
                }
              }),
       Button("Remove Service",
              [this] {
                if (SysUtils::unregister_startup_task()) {
-                 std::clog << "Startup service removed successfully."
-                           << std::endl;
+                 std::clog << UNREGISTER_SUCCESSFUL << std::endl;
                } else {
-                 std::cerr << "Failed to remove startup service. Run as root?"
-                           << std::endl;
+                 std::cerr << UNREGISTER_FAILED << std::endl;
                }
              }),
   });

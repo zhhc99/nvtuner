@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <filesystem>
 
 namespace SysUtils {
 
@@ -13,6 +14,7 @@ int run_command(const std::string& utf8_cmd);
 
 std::string get_executable_path();
 std::string get_executable_dir();
+std::filesystem::path get_user_config_path();
 
 /**
  * @brief Use this to convert utf8 paths to OS specific paths.

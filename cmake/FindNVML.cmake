@@ -4,7 +4,6 @@ find_path(NVML_INCLUDE_DIR nvml.h
         "/usr/local/cuda/include"
         "/usr/include/nvidia"
 )
-message(STATUS "NVML_INCLUDE_DIR found: ${NVML_INCLUDE_DIR}/nvml.h")
 
 if(WIN32)
     find_library(NVML_LIBRARY

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVICE_NAME="NVTunerService"
+SERVICE_NAME="nvtuner"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 echo "nvtuner pre-uninstall: removing systemd service..."
