@@ -16,6 +16,11 @@ std::string get_executable_path();
 std::string get_executable_dir();
 std::filesystem::path get_user_config_path();
 
+#ifdef _WIN32
+#else
+std::string get_user_name();
+#endif
+
 /**
  * @brief Use this to convert utf8 paths to OS specific paths.
  *

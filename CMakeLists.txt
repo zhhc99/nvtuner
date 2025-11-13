@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(nvtuner VERSION 0.1.1 DESCRIPTION "NVIDIA GPU monitoring and tuning tool")
+project(nvtuner VERSION 0.2.0 DESCRIPTION "NVIDIA GPU monitoring and tuning tool")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

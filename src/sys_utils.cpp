@@ -12,7 +12,10 @@
 #include <unistd.h>
 
 #include <cstring>
+
+#include "fmt/core.h"
 #endif
+
 #include <iostream>
 
 namespace {
@@ -36,50 +39,47 @@ std::filesystem::path SysUtils::get_user_config_path() {
   }
   return std::filesystem::path();
 #else
-  struct passwd* pw = nullptr;
-
-  // $USER (systemd service)
-  const char* service_user = std::getenv("USER");
-  if (service_user && strcmp(service_user, "root") != 0) {
-    pw = getpwnam(service_user);
-  }
-
-  // $SUDO_UID (sudo)
-  const char* sudo_uid_str = std::getenv("SUDO_UID");
-  if (sudo_uid_str) {
-    uid_t sudo_uid = std::stoul(sudo_uid_str);
-    pw = getpwuid(sudo_uid);
-  }
-
-  // $PKEXEC_UID (pkexec)
-  if (pw == nullptr) {
-    const char* pkexec_uid_str = std::getenv("PKEXEC_UID");
-    if (pkexec_uid_str) {
-      uid_t pkexec_uid = std::stoul(pkexec_uid_str);
-      pw = getpwuid(pkexec_uid);
-    }
-  }
-
-  // $HOME (running as non-root user)
-  if (pw == nullptr) {
-    const char* home = std::getenv("HOME");
-    if (home && strncmp(home, "/home/", 6) == 0) {
-      return std::filesystem::path(home) / ".config" / "nvtuner";
-    }
-  }
-
-  // fallback to current user. doesn't work with pkexec tho.
-  if (pw == nullptr) {
-    pw = getpwuid(getuid());
-  }
-
-  if (pw == nullptr || pw->pw_dir == nullptr) {
+  std::string user_name = get_user_name();
+  struct passwd* pw = getpwnam(user_name.c_str());
+  if (user_name == "root") {
     return std::filesystem::path();
   }
-
+  if (pw == nullptr) {
+    return std::filesystem::path();
+  }
   return std::filesystem::path(pw->pw_dir) / ".config" / "nvtuner";
 #endif
 }
+
+#ifdef _WIN32
+#else
+std::string SysUtils::get_user_name() {
+  // environment variables are the only reliable way to get real user.
+  // however, system-wide systemd service is running as root, where we use
+  // $NVTUNER_TARGET_USER
+  char* env_user = std::getenv("USER");
+  char* env_sudo_uid = std::getenv("SUDO_UID");
+  char* env_pkexec_uid = std::getenv("PKEXEC_UID");
+  char* env_nvtuner_user = std::getenv("NVTUNER_TARGET_USER");
+
+  std::string ret = "root";
+  struct passwd* pw = nullptr;
+  if (env_nvtuner_user != nullptr) {
+    ret = env_nvtuner_user;
+  } else if (env_sudo_uid != nullptr) {
+    pw = getpwuid(std::stoul(env_sudo_uid));
+  } else if (env_pkexec_uid != nullptr) {
+    pw = getpwuid(std::stoul(env_pkexec_uid));
+  } else if (env_user != nullptr) {
+    ret = env_user;
+  }
+
+  if (pw != nullptr) {
+    ret = pw->pw_name;
+  }
+  return ret;
+}
+#endif
 
 std::string SysUtils::get_executable_path() {
 #ifdef _WIN32
@@ -149,35 +149,44 @@ bool SysUtils::register_startup_task() {
   return run_command(command) == 0;
 #else
   std::filesystem::path config_path = get_user_config_path();
+  std::filesystem::path service_file_path =
+      std::filesystem::path("/etc/systemd/system") /
+      fmt::format("{}@.service", SERVICE_NAME);
+  std::string user_name = get_user_name();
+  std::string user_service_name =
+      fmt::format("{}@{}.service", SERVICE_NAME, user_name);
+
   if (config_path.empty()) {
     return false;
   }
 
-  std::filesystem::path service_file_path =
-      std::filesystem::path("/etc/systemd/system") /
-      (std::string(SERVICE_NAME) + ".service");
+  std::string service_template = R"DELIM([Unit]
+Description=Apply nvtuner profiles on startup for %i
+Requires=user@%i.service
+After=user@%i.service
 
-  command =
-      "pkexec sh -c '"
-      "cat > " +
-      service_file_path.string() +
-      " << 'EOF'\n"
-      "[Unit]\n"
-      "Description=Apply NVTuner Profiles at Startup\n\n"
-      "[Service]\n"
-      "Type=oneshot\n"
-      "ExecStart=/bin/sh -c \"HOME=%h USER=%u " +
-      exe_path + " " + args +
-      "\"\n\n"
-      "[Install]\n"
-      "WantedBy=multi-user.target\n"
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'NVTUNER_TARGET_USER=%i {} {}'
+
+[Install]
+WantedBy=multi-user.target
+)DELIM";
+  std::string command_template =
+      "pkexec sh -c \""
+      "cat > {} << 'EOF'\n"
+      "{}"
       "EOF\n"
-      "systemctl daemon-reload && "
-      "systemctl enable " +
-      std::string(SERVICE_NAME) + "'";
+      "systemctl daemon-reload\n"
+      "systemctl enable {}\"";
+  std::string service_content = fmt::format(service_template, exe_path, args);
+
+  command = fmt::format(command_template, service_file_path.string(),
+                        service_content, user_service_name);
   run_command(command);
-  std::string check_cmd =
-      "systemctl is-enabled " + std::string(SERVICE_NAME) + " > /dev/null 2>&1";
+
+  std::string check_cmd = fmt::format(
+      "systemctl is-enabled {} > /dev/null 2>&1", user_service_name);
   return std::system(check_cmd.c_str()) == 0;
 #endif
 }
@@ -188,22 +197,24 @@ bool SysUtils::unregister_startup_task() {
   command = "schtasks /delete /tn \"" + std::string(SERVICE_NAME) + "\" /f";
   return run_command(command) == 0;
 #else
+  std::filesystem::path config_path = get_user_config_path();
   std::filesystem::path service_file_path =
       std::filesystem::path("/etc/systemd/system") /
-      (std::string(SERVICE_NAME) + ".service");
+      fmt::format("{}@.service", SERVICE_NAME);
+  std::string user_name = get_user_name();
+  std::string user_service_name =
+      fmt::format("{}@{}.service", SERVICE_NAME, user_name);
 
-  command =
+  std::string command_template =
       "pkexec sh -c '"
-      "systemctl disable " +
-      std::string(SERVICE_NAME) +
-      " 2>/dev/null || true && "
-      "rm -f " +
-      service_file_path.string() +
-      " && "
+      "systemctl disable {}\n"
       "systemctl daemon-reload'";
+
+  command = fmt::format(command_template, user_service_name);
   run_command(command);
-  std::string check_cmd =
-      "systemctl is-enabled " + std::string(SERVICE_NAME) + " > /dev/null 2>&1";
+
+  std::string check_cmd = fmt::format(
+      "systemctl is-enabled {} > /dev/null 2>&1", user_service_name);
   return std::system(check_cmd.c_str()) != 0;
 #endif
 }

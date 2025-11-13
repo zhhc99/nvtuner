@@ -37,6 +37,20 @@ int main(int argc, char* argv[]) {
   //   }
   // #endif
 
+  std::filesystem::path config_dir = SysUtils::get_user_config_path();
+  if (config_dir.empty()) {
+    std::cerr << "Fatal: Cannot determine user config directory." << std::endl;
+    return 1;
+  }
+
+  std::filesystem::create_directories(config_dir);
+  std::filesystem::path profile_path = (config_dir / "profiles.json").string();
+  std::filesystem::path log_path = (config_dir / "nvtuner.log").string();
+
+  // --------------------------------------------------------------------------
+  // Initialize NVML; deal with --apply-profiles
+  // ---------------------------------------------------------------------------
+
   std::unique_ptr<NvmlManager> nvml;
   try {
     nvml = std::make_unique<NvmlManager>();
@@ -44,15 +58,6 @@ int main(int argc, char* argv[]) {
     std::cerr << "Fatal: Cannot initialize NVML: " << e.what() << std::endl;
     return 1;
   }
-
-  std::filesystem::path config_dir = SysUtils::get_user_config_path();
-  if (config_dir.empty()) {
-    std::cerr << "Fatal: Cannot determine user config directory." << std::endl;
-    return 1;
-  }
-  std::filesystem::create_directories(config_dir);
-  std::filesystem::path profile_path = (config_dir / "profiles.json").string();
-  std::filesystem::path log_path = (config_dir / "nvtuner.log").string();
 
   if (argc == 2 && std::string(argv[1]) == "--apply-profiles") {
     ProfileManager pm(profile_path, nvml->get_gpus());
@@ -62,6 +67,10 @@ int main(int argc, char* argv[]) {
               << std::endl;
     return 0;
   }
+
+  // ---------------------------------------------------------------------------
+  // Redirect logs to file
+  // ---------------------------------------------------------------------------
 
   std::ofstream log_file(SysUtils::make_path_string(log_path), std::ios::app);
   if (log_file.is_open()) {
@@ -81,6 +90,10 @@ int main(int argc, char* argv[]) {
     std::cerr << "Failed to open log. File logging will be disabled."
               << std::endl;
   }
+
+  // ---------------------------------------------------------------------------
+  // Load profiles
+  // ---------------------------------------------------------------------------
 
   ProfileManager pm(profile_path, nvml->get_gpus());
 
