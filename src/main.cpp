@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
   }
 
   std::filesystem::create_directories(config_dir);
-  std::filesystem::path profile_path = (config_dir / "profiles.json").string();
-  std::filesystem::path log_path = (config_dir / "nvtuner.log").string();
+  std::filesystem::path profile_path = config_dir / "profiles.json";
+  std::filesystem::path log_path = config_dir / "nvtuner.log";
 
   // --------------------------------------------------------------------------
   // Initialize NVML; deal with --apply-profiles
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (argc == 2 && std::string(argv[1]) == "--apply-profiles") {
-    ProfileManager pm(profile_path, nvml->get_gpus());
+    ProfileManager pm(profile_path.string(), nvml->get_gpus());
     nvml->apply_profiles(pm.get_all_profiles());
     std::clog.flush();
     std::cout << "Execution finished. For results, see message above."
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
   // Redirect logs to file
   // ---------------------------------------------------------------------------
 
-  std::ofstream log_file(SysUtils::make_path_string(log_path), std::ios::app);
+  std::ofstream log_file(SysUtils::make_path_string(log_path.string()), std::ios::app);
   if (log_file.is_open()) {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   // Load profiles
   // ---------------------------------------------------------------------------
 
-  ProfileManager pm(profile_path, nvml->get_gpus());
+  ProfileManager pm(profile_path.string(), nvml->get_gpus());
 
   // ---------------------------------------------------------------------------
   // FTXUI
