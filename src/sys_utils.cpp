@@ -23,33 +23,15 @@ namespace {
 const char* SERVICE_NAME = "nvtuner";
 }
 
-int SysUtils::run_command(const std::string& cmd) {
+int SysUtils::exec_command(const std::string& cmd) {
   // return std::system(cmd.c_str());
-  std::string silent_cmd = cmd + " > /dev/null 2>&1";
+  std::string silent_cmd;
 #ifdef _WIN32
   silent_cmd = cmd + " > nul 2>&1";
+#else
+  silent_cmd = cmd + " > /dev/null 2>&1";
 #endif
   return std::system(silent_cmd.c_str());
-}
-
-std::filesystem::path SysUtils::get_user_config_path() {
-#ifdef _WIN32
-  const wchar_t* userprofile = _wgetenv(L"APPDATA");
-  if (userprofile) {
-    return std::filesystem::path(userprofile) / L"nvtuner";
-  }
-  return std::filesystem::path();
-#else
-  std::string user_name = get_user_name();
-  struct passwd* pw = getpwnam(user_name.c_str());
-  if (user_name == "root") {
-    return std::filesystem::path();
-  }
-  if (pw == nullptr) {
-    return std::filesystem::path();
-  }
-  return std::filesystem::path(pw->pw_dir) / ".config" / "nvtuner";
-#endif
 }
 
 #ifdef _WIN32
@@ -79,28 +61,6 @@ int SysUtils::exec_cmd_as_admin_uac(const std::string& utf8_cmd) {
   } else {
     return -1;
   }
-}
-std::string SysUtils::make_utf8_from_wstring(const std::wstring& wstr) {
-  if (wstr.empty()) {
-    return std::string();
-  }
-  int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-                                        (int)wstr.size(), NULL, 0, NULL, NULL);
-  std::string str_to(size_needed, 0);
-  WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), &str_to[0],
-                      size_needed, NULL, NULL);
-  return str_to;
-}
-std::wstring SysUtils::make_wstring_from_utf8(const std::string& utf8) {
-  if (utf8.empty()) {
-    return std::wstring();
-  }
-  int size_needed = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(),
-                                        (int)utf8.size(), nullptr, 0);
-  std::wstring wstr_to(size_needed, 0);
-  MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), &wstr_to[0],
-                      size_needed);
-  return wstr_to;
 }
 #endif
 
@@ -180,6 +140,51 @@ std::string SysUtils::get_executable_dir() {
   return path.substr(0, pos);
 }
 
+std::filesystem::path SysUtils::get_user_config_path() {
+#ifdef _WIN32
+  const wchar_t* userprofile = _wgetenv(L"APPDATA");
+  if (userprofile) {
+    return std::filesystem::path(userprofile) / L"nvtuner";
+  }
+  return std::filesystem::path();
+#else
+  std::string user_name = get_user_name();
+  struct passwd* pw = getpwnam(user_name.c_str());
+  if (user_name == "root") {
+    return std::filesystem::path();
+  }
+  if (pw == nullptr) {
+    return std::filesystem::path();
+  }
+  return std::filesystem::path(pw->pw_dir) / ".config" / "nvtuner";
+#endif
+}
+
+#ifdef _WIN32
+std::string SysUtils::make_utf8_from_wstring(const std::wstring& wstr) {
+  if (wstr.empty()) {
+    return std::string();
+  }
+  int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
+                                        (int)wstr.size(), NULL, 0, NULL, NULL);
+  std::string str_to(size_needed, 0);
+  WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), &str_to[0],
+                      size_needed, NULL, NULL);
+  return str_to;
+}
+std::wstring SysUtils::make_wstring_from_utf8(const std::string& utf8) {
+  if (utf8.empty()) {
+    return std::wstring();
+  }
+  int size_needed = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(),
+                                        (int)utf8.size(), nullptr, 0);
+  std::wstring wstr_to(size_needed, 0);
+  MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), &wstr_to[0],
+                      size_needed);
+  return wstr_to;
+}
+#endif
+
 SysUtils::path_string_t SysUtils::make_path_string(
     const std::string& utf8_path) {
 #ifdef _WIN32
@@ -238,7 +243,7 @@ WantedBy=multi-user.target
 
   command = fmt::format(command_template, service_file_path.string(),
                         service_content, user_service_name);
-  run_command(command);
+  exec_command(command);
 
   std::string check_cmd = fmt::format(
       "systemctl is-enabled {} > /dev/null 2>&1", user_service_name);
@@ -270,10 +275,30 @@ bool SysUtils::unregister_startup_task() {
       "systemctl daemon-reload'";
 
   command = fmt::format(command_template, user_service_name);
-  run_command(command);
+  exec_command(command);
 
   std::string check_cmd = fmt::format(
       "systemctl is-enabled {} > /dev/null 2>&1", user_service_name);
   return std::system(check_cmd.c_str()) != 0;
 #endif
+}
+
+bool SysUtils::call_apply_profiles_as_root() {
+  std::string exe_path = get_executable_path();
+  if (exe_path.empty()) {
+    return false;
+  }
+
+  std::string command = fmt::format("\"{}\" --apply-profiles", exe_path);
+  int exit_code;
+
+#ifdef _WIN32
+  exit_code = exec_cmd_as_admin_uac(command);
+#else
+  std::string user_name = get_user_name();
+  int status = exec_command(fmt::format(
+      "pkexec sh -c 'NVTUNER_TARGET_USER=\"{}\" {}'", user_name, command));
+  exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+#endif
+  return exit_code == 0;
 }

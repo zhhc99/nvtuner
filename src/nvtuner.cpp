@@ -113,7 +113,7 @@ NvmlManager::NvmlManager() {
 NvmlManager::~NvmlManager() { nvmlShutdown(); }
 
 void NvmlManager::update_dynamic_state() {
-  for (auto &gpu : gpus_) {
+  for (auto& gpu : gpus_) {
     unsigned int val;
     nvmlReturn_t ret;
 
@@ -178,29 +178,31 @@ void NvmlManager::update_dynamic_state() {
   }
 }
 
-void NvmlManager::apply_profiles(
-    const std::map<std::string, OcProfile> &profiles) {
+bool NvmlManager::apply_profiles(
+    const std::map<std::string, OcProfile>& profiles) {
   std::clog << fmt::format("Applying profiles for {} GPUs.", gpus_.size())
             << std::endl;
 
-  for (const GpuState &gs : gpus_) {
-    const OcProfile &profile = profiles.at(gs.uuid);
+  bool all_successful = true;
+
+  for (const GpuState& gs : gpus_) {
+    const OcProfile& profile = profiles.at(gs.uuid);
 
     if (profile.power_limit == gs.power_limit_default_w &&
         profile.gpu_clock_offset == 0 &&
         profile.max_gpu_clock == gs.gpu_max_clock_mhz) {
-      std::clog << fmt::format("Skip for GPU {} because profile is default.",
+      std::clog << fmt::format(
+                       "Resetting OC for GPU {} because profile is default.",
+                       gs.index)
+                << std::endl;
+    } else {
+      std::string oc_text =
+          fmt::format("OC ({}W, {:+}MHz, <={}MHz)", profile.power_limit,
+                      profile.gpu_clock_offset, profile.max_gpu_clock);
+      std::clog << fmt::format("Applying profile {} for GPU {}.", oc_text,
                                gs.index)
                 << std::endl;
-      continue;
     }
-
-    std::string oc_text =
-        fmt::format("OC ({}W, {:+}MHz, <={}MHz)", profile.power_limit,
-                    profile.gpu_clock_offset, profile.max_gpu_clock);
-    std::clog << fmt::format("Applying profile {} for GPU {}.", oc_text,
-                             gs.index)
-              << std::endl;
 
     // 1. Set Power Limit
     nvmlReturn_t ret_pl = nvmlDeviceSetPowerManagementLimit(
@@ -224,11 +226,11 @@ void NvmlManager::apply_profiles(
 
     // 3. Set Max Locked Clock
     nvmlReturn_t ret_lc;
-    if (profile.max_gpu_clock < gs.gpu_max_clock_mhz) {
+    if (profile.max_gpu_clock >= gs.gpu_max_clock_mhz) {
+      ret_lc = nvmlDeviceResetGpuLockedClocks(gs.handle);
+    } else {
       ret_lc =
           nvmlDeviceSetGpuLockedClocks(gs.handle, 0, profile.max_gpu_clock);
-    } else {
-      ret_lc = nvmlDeviceResetGpuLockedClocks(gs.handle);
     }
 
     if (ret_pl == NVML_SUCCESS && ret_co == NVML_SUCCESS &&
@@ -243,19 +245,22 @@ void NvmlManager::apply_profiles(
                        gs.index, nvmlErrorString(ret_pl),
                        nvmlErrorString(ret_co), nvmlErrorString(ret_lc))
                 << std::endl;
+      all_successful = false;
     }
   }
+
+  return all_successful;
 }
 
-void NvmlManager::check(nvmlReturn_t result, const std::string &error_msg) {
+void NvmlManager::check(nvmlReturn_t result, const std::string& error_msg) {
   if (result != NVML_SUCCESS) {
     throw std::runtime_error(error_msg +
                              " | Reason: " + nvmlErrorString(result));
   }
 }
 
-nvmlDevice_t NvmlManager::get_handle_by_uuid(const std::string &uuid) {
-  for (const auto &gpu : gpus_) {
+nvmlDevice_t NvmlManager::get_handle_by_uuid(const std::string& uuid) {
+  for (const auto& gpu : gpus_) {
     if (gpu.uuid == uuid) {
       return gpu.handle;
     }
@@ -265,11 +270,11 @@ nvmlDevice_t NvmlManager::get_handle_by_uuid(const std::string &uuid) {
 
 // --- ProfileManager Implementation ---
 
-ProfileManager::ProfileManager(const std::string &file_path,
-                               const std::vector<GpuState> &gpus)
+ProfileManager::ProfileManager(const std::string& file_path,
+                               const std::vector<GpuState>& gpus)
     : file_path_(file_path), gpus_(gpus) {
-  for (const auto &gpu : gpus_) {
-    OcProfile &profile = profiles_[gpu.uuid];
+  for (const auto& gpu : gpus_) {
+    OcProfile& profile = profiles_[gpu.uuid];
     profile.power_limit = gpu.power_limit_default_w;
     profile.gpu_clock_offset = 0;
     profile.max_gpu_clock = gpu.gpu_max_clock_mhz;
@@ -290,7 +295,7 @@ void ProfileManager::load() {
   json data;
   try {
     data = json::parse(file);
-  } catch (const json::parse_error &e) {
+  } catch (const json::parse_error& e) {
     std::cerr << fmt::format(
                      "Error parsing profiles file. Using defaults. "
                      "Details: {}",
@@ -299,13 +304,13 @@ void ProfileManager::load() {
     return;
   }
 
-  for (const auto &gpu : gpus_) {
+  for (const auto& gpu : gpus_) {
     if (!data.contains(gpu.uuid)) {
       continue;
     }
 
-    const json &profile_json = data[gpu.uuid];
-    OcProfile &profile = profiles_.at(gpu.uuid);
+    const json& profile_json = data[gpu.uuid];
+    OcProfile& profile = profiles_.at(gpu.uuid);
 
     int loaded_power = profile_json.value("power_limit", profile.power_limit);
     profile.power_limit =
@@ -329,7 +334,7 @@ void ProfileManager::load() {
 
 void ProfileManager::save() {
   json data;
-  for (const auto &[uuid, profile] : profiles_) {
+  for (const auto& [uuid, profile] : profiles_) {
     json profile_json;
     profile_json["power_limit"] = profile.power_limit;
     profile_json["gpu_clock_offset"] = profile.gpu_clock_offset;

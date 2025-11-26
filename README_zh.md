@@ -34,8 +34,8 @@ NVTuner 是很轻量的工具, 无需后台留存. 它本身使用 NVIDIA **原�
 ## 快速开始
 
 1. **下载:** 从 [Release 页面](https://github.com/zhhc99/nvtuner/releases) 下载最新版本.
-2. **Windows:** 将可执行文件解压到任意空文件夹 (如 `C:/Software/nvtuner`), 以管理员身份运行 `nvtuner.exe`.
-3. **Linux:** 用您的包管理器进行安装, 然后执行 `sudo nvtuner`.
+2. **Windows:** 将可执行文件解压到任意空文件夹 (如 `C:/Software/nvtuner`), 运行 `nvtuner.exe`.
+3. **Linux:** 用您的包管理器进行安装, 然后执行 `nvtuner`.
 
 ## 从源码编译
 
@@ -70,7 +70,7 @@ cd nvtuner
 
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j$(nproc)
 
 cpack # for packaging
@@ -82,21 +82,21 @@ cpack # for packaging
 
 在使用 NVTuner 时:
 
+- **各平台用户**:
+  - 每个用户的配置文件和服务是独立的.
 - **Windows 用户**:
-  - 监控功能无需管理员权限, 但要调整 GPU 设置则需管理员权限运行.
-  - 配置文件位于 `nvtuner.exe` 相同目录下.
-  - 若**移动了程序**, 您需要重新在应用内执行 `Register Service`, 才能使服务正确生效.
-  - **卸载应用**: 以管理员权限启动 `nvtuner.exe`, 执行 `OC Profiles` 下的 `Remove Service`, 然后删除所有文件即可.
+  - 配置文件位于 `%APPDATA%/nvtuner`.
+  - 若**移动了 nvtuner 可执行文件**, 您需要重新在应用内执行 `Register Service`, 才能使服务正确生效.
+  - **卸载应用**: 以管理员权限启动 `nvtuner.exe`, 执行 `OC Profiles` 下的 `Remove Service` 删除计划任务, 然后删除 `nvtuner.exe` (和配置文件) 即可.
 - **Linux 用户**:
-  - 请以 `root` 权限运行: `sudo nvtuner`.
-  - 配置文件位于 `/etc/nvtuner/`.
-  - 用你的包管理器安装和卸载程序. 卸载时, 服务会被自动清除.
-  - 对于多数用户, 建议启用 `nvidia-persistenced` 服务: `sudo systemctl enable --now nvidia-persistenced`. 该服务应该随驱动而安装. 简单来说, 若该服务未启用, 您的 GPU 配置可能会在空闲时自动重置.
+  - 配置文件位于 `~/.config/nvtuner`.
+  - 用包管理器安装和卸载程序. 卸载时, 服务会被自动清除.
+  - 对于多数用户, 建议启用 `nvidia-persistenced` 服务: `sudo systemctl enable --now nvidia-persistenced`. 该服务应该随驱动而安装.
 
 ### 已知问题与限制
 
 - 使用鼠标拖动滑块时无法按步进值 15MHz 调整. 可以使用方向键进行精确调节. (这是上游 `FTXUI` 的限制)
-- Linux 支持在 Fedora 42 进行测试, 其他发行版尚未支持.
+- Linux 支持在 Fedora 42 与 Fedora 43 完成测试, 预计支持 RedHat 系的发行版. 尚未为其他发行版打包.
 
 发现 Bug? [欢迎提交 issue!](https://github.com/zhhc99/nvtuner/issues)
 

@@ -3,7 +3,7 @@
 using namespace ftxui;
 
 Component LogConsole() {
-  const int msg_count = 6;
+  const int msg_count = 4;
   return Renderer([msg_count] {
     Elements lines;
     auto log_messages = LogStreamBuffer::get_messages(msg_count);

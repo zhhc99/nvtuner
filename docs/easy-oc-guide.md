@@ -31,7 +31,7 @@
 - 令 `GPU Max Clock` = `V-F 曲线的最高频率`;
 - 执行 `Save and Apply All`.
 
-这样就好了, 就这么简单. 超频参数会保存到可执行文件目录下的 `nvtuner.json`.
+这样就好了, 就这么简单. 超频参数 `profiles.json` 的存储位置会在软件的 log 中显示.
 
 现在您只需为自己的显卡寻找一组合适的参数.
 
@@ -41,10 +41,6 @@
 
 ## 登录时自动超频
 
-每次重启计算机, 超频配置将被自动重置. 当您**确保超频结果稳定**后, 可以执行 `Register Service`. 这会创建一个计划任务 (Windows) 或 systemd 服务 (Linux), 从而在用户登录时自动应用 `nvtuner.json` 内的超频参数.
+每次重启计算机, 超频配置将被自动重置. 当您**确保超频结果稳定**后, 可以执行 `Register Service`. 这会创建一个计划任务 (Windows) 或 systemd 服务 (Linux), 从而在用户登录时自动应用 `profiles.json` 内的超频参数.
 
-如果您意外保存了不稳定的结果导致无法正常进入系统 (一般不太会这样), 手动删除 `nvtuner.json` 即可重置配置.
-
-> 在 Windows 下, 配置文件于 `nvtuner.exe` 所在的目录生成. 您可能需要以安全模式启动系统, 找到文件并删除.
->
-> 在 Linux 下, 配置文件位于 `/etc/nvtuner`. 您可以用 `Ctrl+Alt+F2` (或 `F3`, `F4`, `F5`) 进入 TTY, 然后删除文件.
+如果您意外保存了不稳定的结果导致进入系统后花屏, 在安全模式 (Windows) / tty (Linux) 手动删除 `profiles.json` 并重启即可重置配置.

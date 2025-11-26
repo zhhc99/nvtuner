@@ -57,7 +57,10 @@ class NvmlManager {
 
   void update_dynamic_state();
 
-  void apply_profiles(const std::map<std::string, OcProfile> &profiles);
+  /**
+   * @return true on success
+   */
+  bool apply_profiles(const std::map<std::string, OcProfile> &profiles);
 
   const std::string &get_driver_version() const { return driver_version_; }
   const std::string &get_nvml_version() const { return nvml_version_; }

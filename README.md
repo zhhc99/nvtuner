@@ -34,8 +34,8 @@ For detailed instructions on GPU overclocking with NVTuner, please see the [Inst
 ## Quick Start
 
 1. **Download** the latest release from the [Releases page](https://github.com/zhhc99/nvtuner/releases)
-2. **Windows**: Extract the executable to an empty folder (e.g., `C:/Software/nvtuner`), then run `nvtuner.exe` as administrator.
-3. **Linux**: Install using your package manager, then run with `sudo nvtuner`.
+2. **Windows**: Extract the executable to an empty folder (e.g., `C:/Software/nvtuner`), then run `nvtuner.exe`.
+3. **Linux**: Install using your package manager, then run with `nvtuner`.
 
 ## Building from Source
 
@@ -70,7 +70,7 @@ cd nvtuner
 
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j$(nproc)
 
 cpack # for packaging
@@ -82,21 +82,22 @@ cpack # for packaging
 
 When using NVTuner, please note the following:
 
+- **All Platform Users**:
+  - Each user's configuration files and services are managed independently.
 - **Windows Users**:
-  - Monitoring does not require administrator privileges, but adjusting GPU settings does require administrator privileges to run.
-  - Configuration files are located in the same directory as `nvtuner.exe`.
-  - If you **move the application**, you need to re-execute `Register Service` within the app for the service to work correctly.
-  - **To Uninstall**: Start `nvtuner.exe` as administrator, execute `Remove Service` under `OC Profiles`, then delete all application files.
+  - Configuration files are located in `%APPDATA%/nvtuner`.
+  - If you **move the nvtuner executable**, you must re-execute `Register Service` within the app to re-enable the service.
+  - **To Uninstall**: Start `nvtuner.exe` as administrator, execute `Remove Service` under `OC Profiles` to delete startup task, and then simply delete `nvtuner.exe` (and configuration files).
 - **Linux Users**:
+  - Configuration files are located in `~/.config/nvtuner/`.
   - Please run with `root` privileges: `sudo nvtuner`.
-  - Configuration files are located in `/etc/nvtuner/`.
-  - Use your package manager to install and uninstall the application. The service will be cleaned automatically once uninstalled.
-  - For most users, it is recommended to enable the `nvidia-persistenced` service: `sudo systemctl enable --now nvidia-persistenced`. This service should be installed with your NVIDIA driver. Simply put, if this service is not enabled, your GPU configurations might automatically reset when the GPU is idle.
+  - Use your package manager to install and uninstall the application. The service will be cleaned automatically upon uninstallation.
+  - For most users, it is recommended to enable the `nvidia-persistenced` service: `sudo systemctl enable --now nvidia-persistenced`. This service should be installed with your NVIDIA driver.
 
 ### Known Issues and Limitations
 
 - Adjusting sliders by dragging with the mouse does not adhere to the 15MHz step value. Use the arrow keys for precise adjustments. (This is a limitation of the upstream `FTXUI` library).
-- Linux support is tested on Fedora 42. Other distros are unsupported yet.
+- Linux support is tested on Fedora 42 / Fedora 43, and is expected to be compatible with other RedHat distros. Packaging is not yet available for other distros.
 
 Found a bug? [Feel free to open an issue!](https://github.com/zhhc99/nvtuner/issues)
 

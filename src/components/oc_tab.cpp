@@ -40,7 +40,15 @@ void OCTab::setup_action_buttons() {
       Button("Save and Apply All",
              [this] {
                pm_.save();
-               nvml_.apply_profiles(pm_.get_all_profiles());
+               if (SysUtils::call_apply_profiles_as_root()) {
+                 std::clog << fmt::format("Profiles applied for {} GPUs.",
+                                          nvml_.get_gpus().size())
+                           << std::endl;
+               } else {
+                 std::cerr << "Failed to apply profiles. No Permissions?"
+                           << std::endl;
+               }
+               //  nvml_.apply_profiles(pm_.get_all_profiles());
              }),
       Button("Register Service",
              [this] {

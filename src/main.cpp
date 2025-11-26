@@ -28,15 +28,6 @@ using namespace ftxui;
 #endif
 
 int main(int argc, char* argv[]) {
-  // #ifndef _WIN32
-  //   if (geteuid() != 0) {
-  //     std::cerr << "Error: nvtuner must be run with root privileges "
-  //                  "(e.g., using sudo)."
-  //               << std::endl;
-  //     return 1;
-  //   }
-  // #endif
-
   std::filesystem::path config_dir = SysUtils::get_user_config_path();
   if (config_dir.empty()) {
     std::cerr << "Fatal: Cannot determine user config directory." << std::endl;
@@ -61,18 +52,19 @@ int main(int argc, char* argv[]) {
 
   if (argc == 2 && std::string(argv[1]) == "--apply-profiles") {
     ProfileManager pm(profile_path.string(), nvml->get_gpus());
-    nvml->apply_profiles(pm.get_all_profiles());
+    bool success = nvml->apply_profiles(pm.get_all_profiles());
     std::clog.flush();
     std::cout << "Execution finished. For results, see message above."
               << std::endl;
-    return 0;
+    return success ? 0 : 1;
   }
 
   // ---------------------------------------------------------------------------
   // Redirect logs to file
   // ---------------------------------------------------------------------------
 
-  std::ofstream log_file(SysUtils::make_path_string(log_path.string()), std::ios::app);
+  std::ofstream log_file(SysUtils::make_path_string(log_path.string()),
+                         std::ios::app);
   if (log_file.is_open()) {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
