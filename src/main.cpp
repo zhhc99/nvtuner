@@ -174,7 +174,17 @@ int main(int argc, char* argv[]) {
   auto screen = ScreenInteractive::Fullscreen();
   // auto screen = ScreenInteractive::TerminalOutput();
 
-  Loop loop(&screen, main_renderer);
+  auto catch_event = CatchEvent(main_renderer, [&](Event event) {
+    if (event == Event::Character('q')) {
+      screen.ExitLoopClosure()();
+      return true;
+    }
+    return false;
+  });
+
+  // Loop loop(&screen, main_renderer);
+  Loop loop(&screen, catch_event);
+
   unsigned long long frame_count = 0;
   nvml->update_dynamic_state();
   graphs_tab.update();
