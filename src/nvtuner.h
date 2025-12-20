@@ -36,6 +36,7 @@ struct GpuState {
   int temperature_c;
   int power_usage_w;
   int power_limit_w;  // Note: this is the *current* limit, not from profile
+  int enforced_power_limit_w; // Real power limit on 40xx+ Laptop GPUs (Onboard dynamic boost)
   int mem_used_mib;
   int mem_total_mib;
   int gpu_util_percent;

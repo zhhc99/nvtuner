@@ -79,10 +79,14 @@ void OCTab::setup_oc_panels() {
 Component OCTab::create_gpu_panel(size_t gpu_index) {
   const auto& gs = nvml_.get_gpus()[gpu_index];
   auto& profile = pm_.get_profile(gs.uuid);
+  bool pl_supported = gs.power_limit_w != -1;
+
+  static int FIXED_MINUS_ONE_FOR_UNSUPPORTED_PL = -1;
 
   auto power_limit_slider =
-      Slider("", &profile.power_limit, &gs.power_limit_min_w,
-             &gs.power_limit_max_w, &POWER_STEP);
+      pl_supported ? Slider("", &profile.power_limit, &gs.power_limit_min_w,
+                            &gs.power_limit_max_w, &POWER_STEP)
+                   : Slider("", &FIXED_MINUS_ONE_FOR_UNSUPPORTED_PL, -1, -1, 1);
   auto gpu_clock_offset_slider =
       Slider("", &profile.gpu_clock_offset, &gs.clock_offset_min_mhz,
              &gs.clock_offset_max_mhz, &CLOCK_STEP);
@@ -96,21 +100,25 @@ Component OCTab::create_gpu_panel(size_t gpu_index) {
       gpu_max_clock_slider,
   });
 
-  return Renderer(oc_panel_component, [this, gpu_index, &gs, &profile,
-                                       power_limit_slider,
+  return Renderer(oc_panel_component, [this, pl_supported, gpu_index, &gs,
+                                       &profile, power_limit_slider,
                                        gpu_clock_offset_slider,
                                        gpu_max_clock_slider] {
     return vbox({
         hbox({
             text(fmt::format("GPU {}: {} ", gs.index, gs.name)) | bold,
             separatorCharacter("|"),
-            text(fmt::format(" OC ({}W, {:+}MHz, <={}MHz)", profile.power_limit,
-                             profile.gpu_clock_offset, profile.max_gpu_clock)) |
+            text(fmt::format(
+                " OC ({}{:+}MHz, <={}MHz)",
+                pl_supported ? fmt::format("{}W, ", profile.power_limit) : "",
+                profile.gpu_clock_offset, profile.max_gpu_clock)) |
                 dim,
         }),
-        create_slider_row("Power Limit",
-                          fmt::format("{}W", profile.power_limit),
-                          power_limit_slider),
+        create_slider_row(
+            "Power Limit",
+            pl_supported ? fmt::format("{}W", profile.power_limit)
+                         : "Unsupported",
+            pl_supported ? power_limit_slider : (power_limit_slider | dim)),
         create_slider_row("GPU Clock Offset",
                           fmt::format("{:+}MHz", profile.gpu_clock_offset),
                           gpu_clock_offset_slider),

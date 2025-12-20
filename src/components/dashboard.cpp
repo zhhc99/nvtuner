@@ -105,8 +105,11 @@ Component Dashboard(const std::vector<GpuState>& gpu_states) {
     power_column.push_back(text("Power") | bold);
     power_column.push_back(separator());
     for (const auto& gs : gpu_states) {
+      int real_pl =
+          gs.power_limit_w == -1 ? gs.enforced_power_limit_w : gs.power_limit_w;
       power_column.push_back(
-          text(fmt::format("{}/{}W", gs.power_usage_w, gs.power_limit_w)));
+          text(fmt::format("{}/{}W", gs.power_usage_w,
+                           real_pl >= 0 ? std::to_string(real_pl) : "N/A")));
     }
     columns.push_back(vbox(power_column) | size(WIDTH, EQUAL, 11));
     columns.push_back(separator());

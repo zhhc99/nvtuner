@@ -108,6 +108,8 @@ NvmlManager::NvmlManager() {
 
     gpus_.push_back(gpu);
   }
+
+  update_dynamic_state();
 }
 
 NvmlManager::~NvmlManager() { nvmlShutdown(); }
@@ -156,6 +158,8 @@ void NvmlManager::update_dynamic_state() {
 
     ret = nvmlDeviceGetPowerManagementLimit(gpu.handle, &val);
     gpu.power_limit_w = (ret == NVML_SUCCESS) ? (val / 1000) : -1;
+    ret = nvmlDeviceGetEnforcedPowerLimit(gpu.handle, &val);
+    gpu.enforced_power_limit_w = (ret == NVML_SUCCESS) ? (val / 1000) : -1;
 
     nvmlMemory_t mem_info;
     ret = nvmlDeviceGetMemoryInfo(gpu.handle, &mem_info);
@@ -214,8 +218,15 @@ bool NvmlManager::apply_profiles(
     }
 
     // 1. Set Power Limit
-    nvmlReturn_t ret_pl = nvmlDeviceSetPowerManagementLimit(
-        gs.handle, profile.power_limit * 1000);
+    nvmlReturn_t ret_pl = NVML_SUCCESS;
+    unsigned int dummy_val;
+    if (nvmlDeviceGetPowerManagementLimit(gs.handle, &dummy_val) !=
+        NVML_SUCCESS) {
+      // PL setter is unsupported, so skip it
+    } else {
+      ret_pl = nvmlDeviceSetPowerManagementLimit(gs.handle,
+                                                 profile.power_limit * 1000);
+    }
 
     // 2. Set Clock Offset
     nvmlReturn_t ret_co;

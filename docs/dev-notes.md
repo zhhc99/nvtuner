@@ -14,6 +14,7 @@
 - **Curve Offset 范围**: 曾考虑过硬编码一个较小的 CO 范围 (如 +/-180MHz) 来防止用户误操作. 但考虑到不同显卡的参数差异较大, 最终决定提供 NVML API 允许的完整范围. 应该通过 **超频手册** 引导用户安全操作.
 - **功耗读取**: 部分显卡不支持 `nvmlDeviceGetPowerUsage`. 已切换到 `sample` 接口作为备选, 其读数与 AIDA64 一致, 暂定为可接受方案. 另外, 旧驱动下无法获取 Power Cap, 可能是接口问题.
 - 热点温度传感器自 50 系似乎被 Nvidia 移除了, 不要试图读取它.
+- 40+ 系的 Laptop GPU 似乎有驱动 / 硬件上的功耗控制, 需要用 `nvmlDeviceGetEnforcedPowerLimit` 读取其当前实际功耗墙. 该数值会随系统状况而变化. 对应的功耗墙 Constraints 和 Default 接口仍然返回 SUCCESS, 但是数值并没有太大意义, 对其的修改也无效. 如果 `nvmlDeviceGetPowerManagementLimit` 为 UNSUPPORTED, 似乎就对应这类 GPU.
 
 ## 近期计划 (Roadmap / TODO)
 
