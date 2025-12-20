@@ -5,6 +5,7 @@
 decltype(&nvmlDeviceGetClockOffsets) nvmlDeviceGetClockOffsets_p = nullptr;
 decltype(&nvmlDeviceSetClockOffsets) nvmlDeviceSetClockOffsets_p = nullptr;
 decltype(&nvmlDeviceGetFanSpeedRPM) nvmlDeviceGetFanSpeedRPM_p = nullptr;
+decltype(&nvmlDeviceGetTemperatureV) nvmlDeviceGetTemperatureV_p = nullptr;
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <windows.h>
@@ -23,21 +24,27 @@ void initialize_nvml_compat() {
   nvmlDeviceGetFanSpeedRPM_p =
       (decltype(nvmlDeviceGetFanSpeedRPM_p))GetProcAddress(
           hNvml, "nvmlDeviceGetFanSpeedRPM");
+  nvmlDeviceGetTemperatureV_p =
+      (decltype(nvmlDeviceGetTemperatureV_p))GetProcAddress(
+          hNvml, "nvmlDeviceGetTemperatureV");
 }
 
 #else
 
 __attribute__((weak)) nvmlReturn_t
-nvmlDeviceGetClockOffsets(nvmlDevice_t device, nvmlClockOffset_t *clockOffset);
+nvmlDeviceGetClockOffsets(nvmlDevice_t device, nvmlClockOffset_t* clockOffset);
 __attribute__((weak)) nvmlReturn_t
-nvmlDeviceSetClockOffsets(nvmlDevice_t device, nvmlClockOffset_t *clockOffset);
+nvmlDeviceSetClockOffsets(nvmlDevice_t device, nvmlClockOffset_t* clockOffset);
 __attribute__((weak)) nvmlReturn_t
-nvmlDeviceGetFanSpeedRPM(nvmlDevice_t device, nvmlFanSpeedInfo_t *fanSpeedInfo);
+nvmlDeviceGetFanSpeedRPM(nvmlDevice_t device, nvmlFanSpeedInfo_t* fanSpeedInfo);
+__attribute__((weak)) nvmlReturn_t
+nvmlDeviceGetTemperatureV(nvmlDevice_t device, nvmlTemperature_t* tempInfo);
 
 void initialize_nvml_compat() {
   nvmlDeviceGetClockOffsets_p = &nvmlDeviceGetClockOffsets;
   nvmlDeviceSetClockOffsets_p = &nvmlDeviceSetClockOffsets;
   nvmlDeviceGetFanSpeedRPM_p = &nvmlDeviceGetFanSpeedRPM;
+  nvmlDeviceGetTemperatureV_p = &nvmlDeviceGetTemperatureV;
 }
 
 #endif

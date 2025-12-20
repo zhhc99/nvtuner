@@ -130,8 +130,17 @@ void NvmlManager::update_dynamic_state() {
       gpu.fan_speed_rpm = -1;
     }
 
-    ret = nvmlDeviceGetTemperature(gpu.handle, NVML_TEMPERATURE_GPU, &val);
-    gpu.temperature_c = (ret == NVML_SUCCESS) ? val : -1;
+    if (nvmlDeviceGetTemperatureV_p) {
+      nvmlTemperature_t temp_info;
+      temp_info.version = nvmlTemperature_v1;
+      temp_info.sensorType = NVML_TEMPERATURE_GPU;
+      ret = nvmlDeviceGetTemperatureV_p(gpu.handle, &temp_info);
+      gpu.temperature_c = (ret == NVML_SUCCESS) ? temp_info.temperature : -1;
+    } else {
+      unsigned int val;
+      ret = nvmlDeviceGetTemperature(gpu.handle, NVML_TEMPERATURE_GPU, &val);
+      gpu.temperature_c = (ret == NVML_SUCCESS) ? (int)val : -1;
+    }
 
     ret = nvmlDeviceGetPowerUsage(gpu.handle, &val);
     gpu.power_usage_w = (ret == NVML_SUCCESS) ? (val / 1000) : -1;
